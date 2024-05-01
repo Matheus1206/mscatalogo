@@ -1,14 +1,12 @@
 package br.com.fiap.catalogoprodutos.services;
 
+import br.com.fiap.catalogoprodutos.dto.ProdutoRequest;
 import br.com.fiap.catalogoprodutos.dto.ProdutoResponse;
 import br.com.fiap.catalogoprodutos.model.Produto;
 import br.com.fiap.catalogoprodutos.repository.ProdutoRepository;
-import br.com.fiap.catalogoprodutos.dto.ProdutoRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
 
 @Service
 public class ProdutoService {
@@ -60,7 +58,7 @@ public class ProdutoService {
         } else {
             produto.setQuantidadeEstoque(produto.getQuantidadeEstoque() - quantidade);
             produtoRepository.save(produto);
-            return ResponseEntity.noContent().build();
+            return ResponseEntity.ok().body(true);
         }
     }
 }
