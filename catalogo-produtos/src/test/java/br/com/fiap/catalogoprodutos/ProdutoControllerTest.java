@@ -1,49 +1,120 @@
 package br.com.fiap.catalogoprodutos;
 
 
-import br.com.fiap.catalogoprodutos.controller.ProdutoController;
+import br.com.fiap.catalogoprodutos.dto.ProdutoRequest;
+import br.com.fiap.catalogoprodutos.dto.ProdutoResponse;
+import br.com.fiap.catalogoprodutos.model.Produto;
 import br.com.fiap.catalogoprodutos.services.ProdutoService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.ResultMatcher;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.given;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
-@WebMvcTest(ProdutoController.class)
+@SpringBootTest
+@AutoConfigureMockMvc
 class ProdutoControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @InjectMocks
-    private ProdutoController produtoController;
-
-    @Mock
+    @MockBean
     private ProdutoService produtoService;
+
+    @Autowired
+    private ObjectMapper mapper;
 
 
     @Test
-    void deveEfetuarUmRequestNoPostDeCadastroDeProduto() throws Exception {
-        int status = mockMvc.perform(post("/api/produtos")).andReturn().getResponse().getStatus();
+    void deveCadastrarProduto() throws Exception {
+        ProdutoRequest produtoRequest = new ProdutoRequest("Teste", "teste", 3f, "teste", "teste", 2);
+        Produto model = produtoRequest.toModel();
+        ResponseEntity<ProdutoResponse> produtoResponseResponseEntity = ResponseEntity.created(null).body(new ProdutoResponse(model));
+        given(produtoService.cadastrarProduto(any(ProdutoRequest.class))).willReturn(produtoResponseResponseEntity);
+        int status = mockMvc.perform(post("/api/produtos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(produtoRequest)))
+                .andReturn()
+                .getResponse()
+                .getStatus();
         assertEquals(201, status);
     }
 
     @Test
-    void deveVerificarQueORetornoDoCadastroEstaCorreto() throws Exception {
-        MvcResult mvcResult = mockMvc.perform(
-                        post("/api/produtos")
-                                .contentType("application/json;charset=UTF-8"))
-                .andExpect((ResultMatcher) jsonPath("$.nome").value("Smartphone XYZ"))
-                .andReturn();
-        assertEquals("Smartphone XYZ", mvcResult.getResponse());
+    void deveAtualizarProduto() throws Exception {
+        ProdutoRequest produtoRequest = new ProdutoRequest("Teste", "teste", 3f, "teste", "teste", 2);
+        Produto model = produtoRequest.toModel();
+        ResponseEntity<ProdutoResponse> produtoResponseResponseEntity = ResponseEntity.ok(new ProdutoResponse(model));
+        given(produtoService.atualizarProduto(anyString(),any(ProdutoRequest.class))).willReturn(produtoResponseResponseEntity);
+        int status = mockMvc.perform(put("/api/produtos/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(produtoRequest)))
+                .andReturn()
+                .getResponse()
+                .getStatus();
+        assertEquals(200, status);
     }
 
+    @Test
+    void deveDeletarProduto() throws Exception {
+        given(produtoService.deletarProduto(anyString())).willReturn(ResponseEntity.noContent().build());
+        int status = mockMvc.perform(delete("/api/produtos/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        )
+                .andReturn()
+                .getResponse()
+                .getStatus();
+        assertEquals(204, status);
+    }
 
+    @Test
+    void deveConsultarUmProduto() throws Exception {
+        ProdutoRequest produtoRequest = new ProdutoRequest("Teste", "teste", 3f, "teste", "teste", 2);
+        Produto model = produtoRequest.toModel();
+        ResponseEntity<ProdutoResponse> produtoResponseResponseEntity = ResponseEntity.ok(new ProdutoResponse(model));
+        given(produtoService.consultarProduto(anyString())).willReturn(produtoResponseResponseEntity);
+        int status = mockMvc.perform(get("/api/produtos/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(produtoRequest)))
+                .andReturn()
+                .getResponse()
+                .getStatus();
+        assertEquals(200, status);
+    }
+
+    @Test
+    void deveConsultarEstoqueDeUmProduto() throws Exception {
+        ProdutoRequest produtoRequest = new ProdutoRequest("Teste", "teste", 3f, "teste", "teste", 2);
+        Produto model = produtoRequest.toModel();
+        ResponseEntity<Integer> produtoResponseResponseEntity = ResponseEntity.ok(1);
+        given(produtoService.consultarEstoqueDoProduto(anyString())).willReturn(produtoResponseResponseEntity);
+        int status = mockMvc.perform(get("/api/produtos/1/estoque")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(produtoRequest)))
+                .andReturn()
+                .getResponse()
+                .getStatus();
+        assertEquals(200, status);
+    }
+
+    @Test
+    void deveConsultarDisponibilidadeEstoqueDeUmProduto() throws Exception {
+        given(produtoService.verificaDisponibilidadeDoProdutoNoEstoque(anyString(), anyInt())).willReturn(ResponseEntity.noContent().build());
+        int status = mockMvc.perform(post("/api/produtos/1/3/estoque")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        )
+                .andReturn()
+                .getResponse()
+                .getStatus();
+        assertEquals(204, status);
+    }
 }
