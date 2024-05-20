@@ -26,7 +26,7 @@ public class Produto {
         this.imagem = imagem;
         this.quantidadeEstoque = quantidadeEstoque;
     }
-
+    @Deprecated
     public Produto(){}
 
 
